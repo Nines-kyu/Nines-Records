@@ -1,4 +1,5 @@
 import { useCallback, useEffect } from 'react'
+import { getAvailableDevices } from '../lib/spotifyApi'
 import { loadSpotifyPlaybackSdk } from '../lib/spotifyPlaybackSdk'
 import { useAuthStore } from '../store/authStore'
 import { usePlayerStore } from '../store/playerStore'
@@ -73,20 +74,50 @@ export function usePlayer() {
 
   const playUri = useCallback(
     async (uri: string) => {
-      if (!deviceId) return
       const token = await getValidAccessToken()
       if (!token) return
 
-      await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+      // The locally cached device ID can go stale (network hiccups, tab
+      // backgrounding) without a `not_ready` event firing, so resolve the
+      // server's current device ID right before starting playback.
+      let targetDeviceId = deviceId
+      try {
+        const devices = await getAvailableDevices(token)
+        const match = devices.find((device) => device.name === PLAYER_NAME)
+        if (match?.id) {
+          targetDeviceId = match.id
+          if (match.id !== deviceId) setDeviceId(match.id)
+        }
+      } catch (err) {
+        console.error('Failed to list Spotify Connect devices:', err)
+      }
+
+      if (!targetDeviceId) {
+        console.error(
+          `No "${PLAYER_NAME}" Connect device found. Reselect it in the Spotify app.`,
+        )
+        return
+      }
+
+      const response = await fetch(
+        `https://api.spotify.com/v1/me/player/play?device_id=${targetDeviceId}`,
+        {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ uris: [uri] }),
         },
-        body: JSON.stringify({ uris: [uri] }),
-      })
+      )
+
+      if (!response.ok) {
+        console.error(
+          `Failed to start playback: ${response.status} ${await response.text()}`,
+        )
+      }
     },
-    [deviceId, getValidAccessToken],
+    [deviceId, getValidAccessToken, setDeviceId],
   )
 
   const resume = useCallback(() => player?.resume(), [player])
