@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from 'react'
-import { getAvailableDevices } from '../lib/spotifyApi'
+import { getAvailableDevices, getPlaybackQueue } from '../lib/spotifyApi'
 import { loadSpotifyPlaybackSdk } from '../lib/spotifyPlaybackSdk'
 import { useAuthStore } from '../store/authStore'
 import { usePlayerStore } from '../store/playerStore'
@@ -16,10 +16,12 @@ export function usePlayer() {
   const isPlaying = usePlayerStore((s) => s.isPlaying)
   const currentTrack = usePlayerStore((s) => s.currentTrack)
   const positionMs = usePlayerStore((s) => s.positionMs)
+  const queue = usePlayerStore((s) => s.queue)
   const setPlayer = usePlayerStore((s) => s.setPlayer)
   const setDeviceId = usePlayerStore((s) => s.setDeviceId)
   const setReady = usePlayerStore((s) => s.setReady)
   const applyState = usePlayerStore((s) => s.applyState)
+  const setQueue = usePlayerStore((s) => s.setQueue)
   const reset = usePlayerStore((s) => s.reset)
 
   useEffect(() => {
@@ -60,6 +62,9 @@ export function usePlayer() {
       spotifyPlayer.addListener('account_error', ({ message }) => {
         console.error('Spotify Web Playback SDK account error (Premium required):', message)
       })
+      spotifyPlayer.addListener('playback_error', ({ message }) => {
+        console.error('Spotify Web Playback SDK playback error:', message)
+      })
 
       spotifyPlayer.connect()
       setPlayer(spotifyPlayer)
@@ -72,11 +77,8 @@ export function usePlayer() {
     }
   }, [status, getValidAccessToken, setPlayer, setDeviceId, setReady, applyState, reset])
 
-  const playUri = useCallback(
-    async (uri: string) => {
-      const token = await getValidAccessToken()
-      if (!token) return
-
+  const resolveDeviceId = useCallback(
+    async (token: string): Promise<string | null> => {
       // The locally cached device ID can go stale (network hiccups, tab
       // backgrounding) without a `not_ready` event firing, so resolve the
       // server's current device ID right before starting playback.
@@ -91,7 +93,29 @@ export function usePlayer() {
       } catch (err) {
         console.error('Failed to list Spotify Connect devices:', err)
       }
+      return targetDeviceId
+    },
+    [deviceId, setDeviceId],
+  )
 
+  const refreshQueue = useCallback(async () => {
+    const token = await getValidAccessToken()
+    if (!token) return
+
+    try {
+      const tracks = await getPlaybackQueue(token)
+      setQueue(tracks)
+    } catch (err) {
+      console.error('Failed to fetch playback queue:', err)
+    }
+  }, [getValidAccessToken, setQueue])
+
+  const startPlayback = useCallback(
+    async (body: { uris: string[] } | { context_uri: string }) => {
+      const token = await getValidAccessToken()
+      if (!token) return
+
+      const targetDeviceId = await resolveDeviceId(token)
       if (!targetDeviceId) {
         console.error(
           `No "${PLAYER_NAME}" Connect device found. Reselect it in the Spotify app.`,
@@ -107,7 +131,7 @@ export function usePlayer() {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ uris: [uri] }),
+          body: JSON.stringify(body),
         },
       )
 
@@ -115,17 +139,51 @@ export function usePlayer() {
         console.error(
           `Failed to start playback: ${response.status} ${await response.text()}`,
         )
+        return
       }
+
+      // Spotify needs a moment to register the new context before the
+      // queue endpoint reflects it.
+      setTimeout(refreshQueue, 800)
     },
-    [deviceId, getValidAccessToken, setDeviceId],
+    [getValidAccessToken, resolveDeviceId, refreshQueue],
+  )
+
+  const playUri = useCallback((uri: string) => startPlayback({ uris: [uri] }), [startPlayback])
+  const playContextUri = useCallback(
+    (contextUri: string) => startPlayback({ context_uri: contextUri }),
+    [startPlayback],
   )
 
   const resume = useCallback(() => player?.resume(), [player])
   const pause = useCallback(() => player?.pause(), [player])
   const togglePlay = useCallback(() => player?.togglePlay(), [player])
   const seek = useCallback((positionMs: number) => player?.seek(positionMs), [player])
-  const next = useCallback(() => player?.nextTrack(), [player])
-  const previous = useCallback(() => player?.previousTrack(), [player])
+  const next = useCallback(async () => {
+    await player?.nextTrack()
+    setTimeout(refreshQueue, 800)
+  }, [player, refreshQueue])
+  const previous = useCallback(async () => {
+    await player?.previousTrack()
+    setTimeout(refreshQueue, 800)
+  }, [player, refreshQueue])
+
+  // Spotify has no "jump to queue position" endpoint — skipping forward
+  // `index + 1` times is what actually moves through the real queue/context,
+  // as opposed to playUri() which would replace it with a single track.
+  // Each nextTrack() call needs a moment to actually register server-side
+  // before the next one is sent, or rapid-fire calls get collapsed into one.
+  const skipToQueueIndex = useCallback(
+    async (index: number) => {
+      if (!player) return
+      for (let i = 0; i <= index; i += 1) {
+        await player.nextTrack()
+        await new Promise((resolve) => setTimeout(resolve, 400))
+      }
+      refreshQueue()
+    },
+    [player, refreshQueue],
+  )
 
   return {
     isReady,
@@ -133,7 +191,11 @@ export function usePlayer() {
     currentTrack,
     positionMs,
     deviceId,
+    queue,
+    refreshQueue,
     playUri,
+    playContextUri,
+    skipToQueueIndex,
     resume,
     pause,
     togglePlay,

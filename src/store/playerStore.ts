@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import type { SpotifyQueueTrack } from '../lib/spotifyApi'
 
 export interface PlayerTrack {
   id: string
@@ -30,10 +31,12 @@ interface PlayerState {
   isPlaying: boolean
   currentTrack: PlayerTrack | null
   positionMs: number
+  queue: SpotifyQueueTrack[]
   setPlayer: (player: Spotify.Player | null) => void
   setDeviceId: (deviceId: string | null) => void
   setReady: (ready: boolean) => void
   applyState: (state: Spotify.PlaybackState | null) => void
+  setQueue: (queue: SpotifyQueueTrack[]) => void
   reset: () => void
 }
 
@@ -44,10 +47,12 @@ export const usePlayerStore = create<PlayerState>()((set) => ({
   isPlaying: false,
   currentTrack: null,
   positionMs: 0,
+  queue: [],
 
   setPlayer: (player) => set({ player }),
   setDeviceId: (deviceId) => set({ deviceId }),
   setReady: (isReady) => set({ isReady }),
+  setQueue: (queue) => set({ queue }),
 
   applyState: (state) =>
     set(
@@ -68,5 +73,6 @@ export const usePlayerStore = create<PlayerState>()((set) => ({
       isPlaying: false,
       currentTrack: null,
       positionMs: 0,
+      queue: [],
     }),
 }))
