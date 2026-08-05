@@ -1,0 +1,49 @@
+# Nines九 Records
+
+A virtual record player / turntable UI that plays full songs through Spotify.
+Built with React, TypeScript, Vite, Tailwind CSS, Framer Motion, and Zustand,
+using the Spotify Web Playback SDK and Web API. Requires Spotify Premium.
+
+Everything runs client-side (Authorization Code with PKCE) — no backend, deployable as a static site.
+
+## Setup
+
+1. Clone the repo and install dependencies:
+
+   ```bash
+   git clone https://github.com/Nines-kyu/nines-records.git
+   cd nines-records
+   npm install
+   ```
+
+2. Create a Spotify app at the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
+   and add a redirect URI matching your dev/prod URL (e.g. `http://127.0.0.1:9799/callback`).
+
+3. Generate your local `.env` from the template:
+
+   ```bash
+   npm run setup:env
+   ```
+
+   This copies `.env.example` to `.env` (leaving an existing `.env` untouched)
+   and prints what each variable needs. Then fill in `.env`:
+
+   ```bash
+   # .env
+   VITE_SPOTIFY_CLIENT_ID=your_spotify_client_id       # from the Spotify dashboard app you created above
+   VITE_SPOTIFY_REDIRECT_URI=http://127.0.0.1:9799/callback  # must match a redirect URI on that app
+   ```
+
+4. Start the dev server:
+
+   ```bash
+   npm run dev
+   ```
+
+## Scripts
+
+- `npm run dev` — start the Vite dev server
+- `npm run build` — type-check and build for production
+- `npm run lint` — run oxlint
+- `npm run preview` — preview the production build locally
+- `npm run setup:env` — create `.env` from `.env.example` (safe to re-run, won't overwrite an existing `.env`)
