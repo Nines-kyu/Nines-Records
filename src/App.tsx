@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { AuthCallback } from './components/AuthCallback'
 import { LoginButton } from './components/LoginButton'
+import { PlayerDebugPanel } from './components/PlayerDebugPanel'
 import { useAuthStore } from './store/authStore'
 
 interface SpotifyProfile {
@@ -55,6 +56,7 @@ function App() {
           <p className="text-sm text-neutral-300">
             Signed in{profile?.display_name ? ` as ${profile.display_name}` : ''}.
           </p>
+          <PlayerDebugPanel />
           <button
             type="button"
             onClick={logout}
