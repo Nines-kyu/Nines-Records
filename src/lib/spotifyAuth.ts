@@ -10,6 +10,8 @@ export const SPOTIFY_SCOPES = [
   'user-read-private',
   'user-modify-playback-state',
   'user-read-playback-state',
+  'playlist-read-private',
+  'playlist-read-collaborative',
 ]
 
 const AUTHORIZE_ENDPOINT = 'https://accounts.spotify.com/authorize'

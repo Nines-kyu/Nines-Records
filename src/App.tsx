@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { AuthCallback } from './components/AuthCallback'
 import { LoginButton } from './components/LoginButton'
+import { PlaylistsPanel } from './components/PlaylistsPanel'
+import { QueuePanel } from './components/QueuePanel'
 import { Search } from './components/Search'
 import { Turntable } from './components/Turntable'
 import { TurntableControls } from './components/TurntableControls'
@@ -58,9 +60,23 @@ function App() {
           <p className="text-sm text-neutral-300">
             Signed in{profile?.display_name ? ` as ${profile.display_name}` : ''}.
           </p>
-          <Turntable />
-          <TurntableControls />
-          <Search />
+          <div className="w-full max-w-360 rounded-2xl border border-neutral-800 bg-neutral-900/20 p-6">
+            <div className="flex w-full flex-col items-start gap-8 lg:flex-row lg:justify-between">
+              <div className="flex w-full flex-col gap-6 lg:w-2xl lg:shrink-0 lg:flex-row">
+                <div className="min-w-0 flex-1">
+                  <PlaylistsPanel />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <QueuePanel />
+                </div>
+              </div>
+              <div className="flex flex-1 flex-col items-center gap-6">
+                <Turntable />
+                <TurntableControls />
+                <Search />
+              </div>
+            </div>
+          </div>
           <button
             type="button"
             onClick={logout}
