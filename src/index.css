@@ -2,6 +2,8 @@
 
 @theme {
   --font-sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --color-accent: #ff914d;
+  --color-accent-hover: #ff7f2a;
 }
 
 :root {
