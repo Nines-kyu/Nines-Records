@@ -40,6 +40,18 @@ Everything runs client-side (Authorization Code with PKCE) — no backend, deplo
    npm run dev
    ```
 
+## Deployment (Netlify)
+
+This is a static build (`npm run build` → `dist/`), so any static host works. For Netlify:
+
+1. Build command: `npm run build`, publish directory: `dist`
+2. Set `VITE_SPOTIFY_CLIENT_ID` and `VITE_SPOTIFY_REDIRECT_URI` (e.g. `https://your-site.netlify.app/callback`)
+   as environment variables in Site settings
+3. Add that same redirect URI to the Spotify app's Redirect URIs (you can register both the
+   localhost and production URIs on the same app)
+4. `public/_redirects` is already set up to serve `index.html` for all paths — needed because
+   `/callback` is handled client-side, not by a real server route
+
 ## Scripts
 
 - `npm run dev` — start the Vite dev server

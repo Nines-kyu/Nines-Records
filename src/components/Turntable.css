@@ -1,0 +1,399 @@
+.nr-turntable-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.nr-turntable {
+  width: min(600px, 92vw);
+  max-height: 400px;
+  aspect-ratio: 1;
+  position: relative;
+}
+
+.nr-table-shadow {
+  position: absolute;
+  top: 123px;
+  left: 112px;
+  width: 435px;
+  height: 220px;
+  background: #000;
+  border-radius: 10px;
+  transform: rotateZ(10deg) skewX(-25deg);
+  opacity: 0.4;
+}
+
+.nr-table-feet {
+  position: absolute;
+  top: 253px;
+  left: 70px;
+  width: 45px;
+  height: 45px;
+  background: #455162;
+  border-radius: 50px;
+  transform: rotateZ(10deg) skewX(-25deg);
+  box-shadow: 369px 0px 0px #455162;
+}
+
+.nr-black-base {
+  position: absolute;
+  top: 289px;
+  left: 43px;
+  width: 440px;
+  height: 26px;
+  background: #1a1a1a;
+  border-radius: 0 0 15px 8px;
+  transform: rotateZ(10deg) skewX(10deg);
+  overflow: hidden;
+  z-index: 1;
+}
+
+.nr-black-side {
+  position: absolute;
+  top: 122px;
+  left: 524px;
+  width: 25px;
+  height: 240px;
+  background: #1a1a1a;
+  border-radius: 0 2px 25px 0;
+  transform: rotateZ(50deg) skewX(15deg) skewY(48deg);
+  overflow: hidden;
+}
+
+.nr-table {
+  position: absolute;
+  top: 80px;
+  left: 109px;
+  width: 437px;
+  height: 223px;
+  background: #111;
+  border-radius: 10px;
+  transform: rotateZ(10deg) skewX(-25deg);
+  z-index: 2;
+}
+
+.nr-table::before {
+  position: absolute;
+  top: -5px;
+  left: -2px;
+  width: 436px;
+  height: 225px;
+  background: #e15e3c;
+  border-radius: 10px;
+  content: '';
+}
+
+.nr-table::after {
+  position: absolute;
+  top: -12px;
+  left: -6px;
+  width: 436px;
+  height: 225px;
+  background: #e1683a;
+  border-radius: 10px;
+  content: '';
+}
+
+.nr-record {
+  position: absolute;
+  top: 12px;
+  left: 128px;
+  width: 300px;
+  height: 300px;
+  background: #1a1a1a;
+  border-radius: 150px;
+  box-shadow: 0px 8px #e36647;
+  transform: rotateX(50deg) rotateY(-3deg);
+  z-index: 5;
+}
+
+.nr-record::before {
+  position: absolute;
+  top: -20px;
+  left: 0px;
+  width: 300px;
+  height: 300px;
+  background: repeating-radial-gradient(#1a1a1a, #1a1a1a 5px, #2c2c2c 6px, #2c2c2c 7px);
+  border-radius: 150px;
+  box-shadow: 0px 3px #252525;
+  content: '';
+}
+
+.nr-label {
+  position: absolute;
+  top: 75px;
+  left: 95px;
+  width: 110px;
+  height: 110px;
+  border-radius: 150px;
+  background: #2c2c2c;
+}
+
+.nr-logo-center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  clip-path: circle(50% at 50% 50%);
+  z-index: 10;
+  background: var(--color-accent);
+}
+
+.nr-axis-shadow {
+  position: absolute;
+  top: 145px;
+  left: 274px;
+  width: 6px;
+  height: 10px;
+  background: #000;
+  opacity: 0.5;
+  border-radius: 0 0 6px 6px;
+  z-index: 6;
+}
+
+.nr-axis {
+  position: absolute;
+  top: 139px;
+  left: 274px;
+  width: 6px;
+  height: 10px;
+  background: #f1f9fe;
+  border-radius: 6px;
+  z-index: 7;
+}
+
+.nr-axis::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 4px;
+  height: 8px;
+  background: #111;
+  opacity: 0.2;
+  border-radius: 6px 6px 0 0;
+}
+
+.nr-lever {
+  position: absolute;
+  top: 150px;
+  left: 515px;
+  width: 2px;
+  height: 40px;
+  background: #464646;
+  border-right: 1px solid #1a1a1a;
+  transform: skewX(-35deg);
+  z-index: 6;
+}
+
+.nr-lever::before {
+  content: '';
+  position: absolute;
+  top: 35px;
+  left: -2px;
+  width: 7px;
+  height: 12px;
+  background: #1a1a1a;
+  border-radius: 2px;
+}
+
+.nr-lever::after {
+  content: '';
+  position: absolute;
+  top: 35px;
+  left: -2px;
+  width: 5px;
+  height: 9px;
+  background: #464646;
+  border-radius: 2px 2px 0 0;
+}
+
+.nr-base {
+  position: absolute;
+  top: 115px;
+  left: 490px;
+  width: 58px;
+  height: 58px;
+  background: #1a1a1a;
+  border-radius: 55px;
+  transform: rotateZ(30deg) skewX(-26deg);
+  z-index: 6;
+  cursor: pointer;
+}
+
+.nr-base::before {
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  width: 58px;
+  height: 58px;
+  background: #464646;
+  border-radius: 55px;
+  content: '';
+}
+
+.nr-base::after {
+  position: absolute;
+  top: 26px;
+  left: 38px;
+  width: 7px;
+  height: 7px;
+  background: #464646;
+  border-radius: 55px;
+  box-shadow: 1px 1px #1a1a1a;
+  content: '';
+}
+
+.nr-tonearm-assembly {
+  position: absolute;
+  top: 115px;
+  left: 490px;
+  transform-origin: 29px 29px;
+  transition: transform 0.6s ease;
+  transform: rotateZ(0deg);
+  z-index: 6;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.nr-tonearm-assembly.is-playing {
+  transform: rotateZ(40deg);
+}
+
+.nr-axle-shadow {
+  position: absolute;
+  top: 12px;
+  left: 8px;
+  width: 35px;
+  height: 21px;
+  background: #1a1a1a;
+  transform: rotateZ(-23deg);
+}
+
+.nr-axle-shadow::before {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 10px;
+  height: 30px;
+  background: #1a1a1a;
+  content: '';
+}
+
+.nr-axle-shadow::after {
+  position: absolute;
+  top: -16px;
+  left: 12px;
+  width: 10px;
+  height: 30px;
+  background: #1a1a1a;
+  content: '';
+}
+
+.nr-axle {
+  position: absolute;
+  top: -31px;
+  left: 1px;
+  width: 60px;
+  height: 45px;
+  background: #464646;
+  border-radius: 45px;
+  transform: rotateZ(-55deg) scaleX(0.9);
+}
+
+.nr-axle::before {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 45px;
+  height: 45px;
+  background: #1a1a1a;
+  border-radius: 45px;
+  content: '';
+}
+
+.nr-axle::after {
+  position: absolute;
+  top: 14px;
+  left: 10px;
+  width: 17px;
+  height: 17px;
+  background: transparent;
+  border-radius: 45px;
+  box-shadow: 3px 0px #464646;
+  content: '';
+}
+
+.nr-arm {
+  position: absolute;
+  top: 53px;
+  left: -90px;
+  width: 150px;
+  height: 8px;
+  background: #464646;
+  border-bottom: 3px solid #1a1a1a;
+  border-radius: 45px;
+  transform: rotateZ(-55deg);
+}
+
+.nr-needle {
+  position: absolute;
+  top: -15px;
+  left: -26px;
+  width: 20px;
+  height: 30px;
+  background: #1a1a1a;
+  border-radius: 5px 10px 0 5px;
+  transform: rotateY(50deg) skewX(5deg);
+  z-index: 5;
+}
+
+.nr-needle::before {
+  position: absolute;
+  top: 15px;
+  left: 17px;
+  width: 23px;
+  height: 5px;
+  background: #464646;
+  box-shadow: 0px 3px #1a1a1a;
+  content: '';
+  z-index: 5;
+}
+
+@media (max-width: 640px) {
+  .nr-turntable {
+    max-width: 290px;
+    max-height: 180px;
+  }
+
+  .nr-table-shadow { top: 55px; left: 50px; width: 196px; height: 99px; border-radius: 5px; }
+  .nr-table-feet { top: 114px; left: 32px; width: 20px; height: 20px; box-shadow: 150px -28px 0 #455162; }
+  .nr-black-base { top: 130px; left: 19px; width: 198px; height: 12px; border-radius: 0 0 6px 4px; }
+  .nr-black-side { top: 55px; left: 236px; width: 11px; height: 108px; border-radius: 0 1px 11px 0; }
+  .nr-table { top: 36px; left: 49px; width: 196px; height: 100px; border-radius: 5px; }
+  .nr-table::before, .nr-table::after { width: 196px; height: 100px; top: -5px; left: -3px; border-radius: 5px; }
+  .nr-record { width: 135px; height: 135px; top: 5px; left: 58px; border-radius: 68px; }
+  .nr-record::before { width: 135px; height: 135px; top: -9px; }
+  .nr-label { width: 50px; height: 50px; top: 33px; left: 43px; border-radius: 68px; }
+  .nr-axis-shadow { top: 65px; left: 123px; width: 3px; height: 5px; border-radius: 3px; }
+  .nr-axis { top: 63px; left: 123px; width: 3px; height: 5px; border-radius: 3px; }
+  .nr-lever { top: 68px; left: 232px; width: 1px; height: 18px; }
+  .nr-lever::before { width: 3px; height: 5px; top: 16px; left: -1px; }
+  .nr-lever::after { width: 2px; height: 4px; top: 16px; left: -1px; }
+  .nr-base { top: 52px; left: 220px; width: 26px; height: 26px; border-radius: 25px; }
+  .nr-base::before { width: 26px; height: 26px; top: -3px; left: -3px; }
+  .nr-base::after { width: 5px; height: 5px; top: 9px; left: 16px; }
+  .nr-axle-shadow { top: 5px; left: 0px; width: 16px; height: 9px; z-index: 10; }
+  .nr-axle-shadow::before, .nr-axle-shadow::after { width: 5px; height: 13px; top: 6px; left: 6px; }
+  .nr-axle { top: -14px; left: 0; width: 27px; height: 20px; border-radius: 20px; transform: rotateZ(-55deg) scaleX(0.9); }
+  .nr-axle::before { width: 20px; height: 20px; }
+  .nr-axle::after { width: 8px; height: 8px; top: 6px; left: 4px; }
+  .nr-arm { top: 24px; left: -41px; width: 68px; height: 4px; border-bottom: 1.5px solid #1a1a1a; }
+  .nr-needle { top: -7px; left: -12px; width: 9px; height: 14px; border-radius: 2px 5px 0 2px; }
+  .nr-needle::before { width: 11px; height: 2.5px; top: 7px; left: 7px; box-shadow: 0px 1.3px #1a1a1a; }
+  .nr-tonearm-assembly { top: 52px; left: 220px; transform-origin: 13px 13px; }
+}
