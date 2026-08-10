@@ -64,6 +64,40 @@ export async function getPlaybackQueue(accessToken: string): Promise<SpotifyQueu
   return data.queue.map(toQueueTrack)
 }
 
+export async function setPlaybackShuffle(
+  accessToken: string,
+  deviceId: string,
+  state: boolean,
+): Promise<void> {
+  const params = new URLSearchParams({ state: String(state), device_id: deviceId })
+  const response = await fetch(
+    `https://api.spotify.com/v1/me/player/shuffle?${params.toString()}`,
+    { method: 'PUT', headers: { Authorization: `Bearer ${accessToken}` } },
+  )
+
+  if (!response.ok) {
+    throw new Error(`Failed to set shuffle: ${response.status} ${await response.text()}`)
+  }
+}
+
+export type SpotifyRepeatMode = 'off' | 'context' | 'track'
+
+export async function setPlaybackRepeatMode(
+  accessToken: string,
+  deviceId: string,
+  mode: SpotifyRepeatMode,
+): Promise<void> {
+  const params = new URLSearchParams({ state: mode, device_id: deviceId })
+  const response = await fetch(
+    `https://api.spotify.com/v1/me/player/repeat?${params.toString()}`,
+    { method: 'PUT', headers: { Authorization: `Bearer ${accessToken}` } },
+  )
+
+  if (!response.ok) {
+    throw new Error(`Failed to set repeat mode: ${response.status} ${await response.text()}`)
+  }
+}
+
 export interface SpotifyPlaylist {
   id: string
   uri: string
@@ -125,6 +159,21 @@ export interface SpotifyTrackResult {
   durationMs: number
 }
 
+export interface SpotifyAlbumResult {
+  id: string
+  uri: string
+  name: string
+  artists: string
+  imageUrl: string | null
+  releaseYear: string | null
+  trackCount: number
+}
+
+export interface SpotifySearchResults {
+  tracks: SpotifyTrackResult[]
+  albums: SpotifyAlbumResult[]
+}
+
 interface SpotifySearchResponse {
   tracks?: {
     items: Array<{
@@ -136,13 +185,21 @@ interface SpotifySearchResponse {
       duration_ms: number
     }>
   }
+  albums?: {
+    items: Array<{
+      id: string
+      uri: string
+      name: string
+      artists: { name: string }[]
+      images: { url: string }[]
+      release_date?: string
+      total_tracks: number
+    }>
+  }
 }
 
-export async function searchTracks(
-  query: string,
-  accessToken: string,
-): Promise<SpotifyTrackResult[]> {
-  const params = new URLSearchParams({ q: query, type: 'track' })
+export async function search(query: string, accessToken: string): Promise<SpotifySearchResults> {
+  const params = new URLSearchParams({ q: query, type: 'track,album' })
 
   const response = await fetch(`https://api.spotify.com/v1/search?${params.toString()}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -153,9 +210,8 @@ export async function searchTracks(
   }
 
   const data = (await response.json()) as SpotifySearchResponse
-  const items = data.tracks?.items ?? []
 
-  return items.map((track) => ({
+  const tracks = (data.tracks?.items ?? []).map((track) => ({
     id: track.id,
     uri: track.uri,
     name: track.name,
@@ -164,4 +220,16 @@ export async function searchTracks(
     albumImageUrl: track.album.images[0]?.url ?? null,
     durationMs: track.duration_ms,
   }))
+
+  const albums = (data.albums?.items ?? []).map((album) => ({
+    id: album.id,
+    uri: album.uri,
+    name: album.name,
+    artists: album.artists.map((artist) => artist.name).join(', '),
+    imageUrl: album.images[0]?.url ?? null,
+    releaseYear: album.release_date?.slice(0, 4) ?? null,
+    trackCount: album.total_tracks,
+  }))
+
+  return { tracks, albums }
 }
