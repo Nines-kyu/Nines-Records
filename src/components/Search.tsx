@@ -1,9 +1,11 @@
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useEffect, useRef, useState } from 'react'
 import { usePlayer } from '../hooks/usePlayer'
-import { searchTracks, type SpotifyTrackResult } from '../lib/spotifyApi'
+import { search, type SpotifySearchResults } from '../lib/spotifyApi'
 import { useAuthStore } from '../store/authStore'
 
 type SearchStatus = 'idle' | 'loading' | 'error'
+
+const EMPTY_RESULTS: SpotifySearchResults = { tracks: [], albums: [] }
 
 function formatDuration(ms: number): string {
   const totalSeconds = Math.round(ms / 1000)
@@ -14,10 +16,25 @@ function formatDuration(ms: number): string {
 
 export function Search() {
   const getValidAccessToken = useAuthStore((s) => s.getValidAccessToken)
-  const { playUri, deviceId } = usePlayer()
+  const { playUri, playContextUri, deviceId } = usePlayer()
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<SpotifyTrackResult[]>([])
+  const [results, setResults] = useState<SpotifySearchResults>(EMPTY_RESULTS)
   const [status, setStatus] = useState<SearchStatus>('idle')
+  const containerRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setResults(EMPTY_RESULTS)
+        setStatus('idle')
+        inputRef.current?.blur()
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    return () => document.removeEventListener('mousedown', handlePointerDown)
+  }, [])
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
@@ -28,8 +45,8 @@ export function Search() {
     try {
       const token = await getValidAccessToken()
       if (!token) throw new Error('Not authenticated')
-      const tracks = await searchTracks(trimmed, token)
-      setResults(tracks)
+      const searchResults = await search(trimmed, token)
+      setResults(searchResults)
       setStatus('idle')
     } catch (err) {
       console.error('Spotify search failed:', err)
@@ -37,17 +54,41 @@ export function Search() {
     }
   }
 
+  const handleQueryChange = (value: string) => {
+    setQuery(value)
+    if (!value.trim()) {
+      setResults(EMPTY_RESULTS)
+      setStatus('idle')
+    }
+  }
+
+  const handleSelectTrack = (uri: string) => {
+    playUri(uri)
+    setResults(EMPTY_RESULTS)
+    inputRef.current?.blur()
+  }
+
+  const handleSelectAlbum = (uri: string) => {
+    playContextUri(uri)
+    setResults(EMPTY_RESULTS)
+    inputRef.current?.blur()
+  }
+
+  const hasResults = results.tracks.length > 0 || results.albums.length > 0
+  const isResultsOpen = status === 'error' || hasResults
+
   return (
-    <div className="flex w-full max-w-md flex-col gap-3 rounded-2xl border border-neutral-800 bg-neutral-900/40 p-4">
+    <div ref={containerRef} className="relative mx-auto w-full max-w-md">
       <form
         onSubmit={handleSubmit}
         className="flex items-center gap-2 rounded-full border border-neutral-700 bg-neutral-950/60 py-1.5 pl-4 pr-1.5 transition focus-within:border-accent"
       >
         <input
+          ref={inputRef}
           type="text"
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search for a song…"
+          onChange={(event) => handleQueryChange(event.target.value)}
+          placeholder="Search for a song or album…"
           className="flex-1 bg-transparent py-1 text-sm outline-none placeholder:text-neutral-600"
         />
         <button
@@ -65,32 +106,76 @@ export function Search() {
         </button>
       </form>
 
-      {status === 'error' && <p className="text-xs text-red-400">Search failed. Try again.</p>}
+      {isResultsOpen && (
+        <div className="absolute inset-x-0 top-full z-20 mt-2 flex max-h-96 flex-col gap-3 overflow-y-auto rounded-2xl border border-neutral-800 bg-neutral-900/95 p-3 shadow-xl backdrop-blur">
+          {status === 'error' && <p className="px-1 text-xs text-red-400">Search failed. Try again.</p>}
 
-      {results.length > 0 && (
-        <ul className="flex max-h-80 flex-col divide-y divide-neutral-800/60 overflow-y-auto text-left">
-          {results.map((track) => (
-            <li key={track.id}>
-              <button
-                type="button"
-                onClick={() => playUri(track.uri)}
-                disabled={!deviceId}
-                className="flex w-full items-center gap-3 px-1 py-2 text-left transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {track.albumImageUrl && (
-                  <img src={track.albumImageUrl} alt="" className="h-10 w-10 shrink-0 rounded" />
-                )}
-                <span className="flex flex-1 flex-col overflow-hidden">
-                  <span className="truncate text-sm">{track.name}</span>
-                  <span className="truncate text-xs text-neutral-400">{track.artists}</span>
-                </span>
-                <span className="shrink-0 text-xs text-neutral-500">
-                  {formatDuration(track.durationMs)}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
+          {results.tracks.length > 0 && (
+            <div className="flex flex-col gap-1">
+              <h3 className="px-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                Songs
+              </h3>
+              <ul className="flex flex-col divide-y divide-neutral-800/60 text-left">
+                {results.tracks.map((track) => (
+                  <li key={track.id}>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectTrack(track.uri)}
+                      disabled={!deviceId}
+                      className="flex w-full items-center gap-3 px-1 py-2 text-left transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {track.albumImageUrl && (
+                        <img
+                          src={track.albumImageUrl}
+                          alt=""
+                          className="h-10 w-10 shrink-0 rounded"
+                        />
+                      )}
+                      <span className="flex flex-1 flex-col overflow-hidden">
+                        <span className="truncate text-sm">{track.name}</span>
+                        <span className="truncate text-xs text-neutral-400">{track.artists}</span>
+                      </span>
+                      <span className="shrink-0 text-xs text-neutral-500">
+                        {formatDuration(track.durationMs)}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {results.albums.length > 0 && (
+            <div className="flex flex-col gap-1">
+              <h3 className="px-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                Albums
+              </h3>
+              <ul className="flex flex-col divide-y divide-neutral-800/60 text-left">
+                {results.albums.map((album) => (
+                  <li key={album.id}>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectAlbum(album.uri)}
+                      disabled={!deviceId}
+                      className="flex w-full items-center gap-3 px-1 py-2 text-left transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {album.imageUrl && (
+                        <img src={album.imageUrl} alt="" className="h-10 w-10 shrink-0 rounded" />
+                      )}
+                      <span className="flex flex-1 flex-col overflow-hidden">
+                        <span className="truncate text-sm">{album.name}</span>
+                        <span className="truncate text-xs text-neutral-400">{album.artists}</span>
+                      </span>
+                      <span className="shrink-0 text-xs text-neutral-500">
+                        {album.releaseYear ?? `${album.trackCount} tracks`}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
       )}
     </div>
   )

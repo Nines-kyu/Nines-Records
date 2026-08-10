@@ -1,7 +1,17 @@
 import { usePlayer } from '../hooks/usePlayer'
 
 export function TurntableControls() {
-  const { isReady, isPlaying, togglePlay, next, previous } = usePlayer()
+  const {
+    isReady,
+    isPlaying,
+    togglePlay,
+    next,
+    previous,
+    shuffle,
+    repeatMode,
+    toggleShuffle,
+    cycleRepeatMode,
+  } = usePlayer()
 
   return (
     <div className="flex items-center gap-6 rounded-2xl border border-neutral-800 bg-neutral-900/60 px-6 py-4">
@@ -11,6 +21,22 @@ export function TurntableControls() {
         }`}
         aria-hidden="true"
       />
+
+      <button
+        type="button"
+        onClick={toggleShuffle}
+        aria-label="Toggle shuffle"
+        aria-pressed={shuffle}
+        className={`flex h-9 w-9 items-center justify-center rounded-full border transition active:scale-95 ${
+          shuffle
+            ? 'border-accent text-accent'
+            : 'border-neutral-700 text-neutral-300 hover:border-accent hover:text-accent'
+        }`}
+      >
+        <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current">
+          <path d="M17 3l4 4-4 4V8.5h-3.6l-2-2H17V3zM3 6h5.4l9.2 9.2c.5.5 1.2.8 1.9.8H23v2h-3.5a4 4 0 0 1-2.83-1.17L7.4 7.5H3V6zm14 15v-3.5h-3.6l-2 2H3v-2h7.4l2-2H17v-3.5l4 4-4 4z" />
+        </svg>
+      </button>
 
       <button
         type="button"
@@ -50,6 +76,29 @@ export function TurntableControls() {
         <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current">
           <path d="M16 6h2v12h-2zM6 6l8.5 6L6 18z" />
         </svg>
+      </button>
+
+      <button
+        type="button"
+        onClick={cycleRepeatMode}
+        aria-label={
+          repeatMode === 2 ? 'Repeat: track' : repeatMode === 1 ? 'Repeat: all' : 'Repeat: off'
+        }
+        aria-pressed={repeatMode !== 0}
+        className={`relative flex h-9 w-9 items-center justify-center rounded-full border transition active:scale-95 ${
+          repeatMode !== 0
+            ? 'border-accent text-accent'
+            : 'border-neutral-700 text-neutral-300 hover:border-accent hover:text-accent'
+        }`}
+      >
+        <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current">
+          <path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z" />
+        </svg>
+        {repeatMode === 2 && (
+          <span className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-accent text-[9px] font-bold leading-none text-black">
+            1
+          </span>
+        )}
       </button>
     </div>
   )
