@@ -1,5 +1,7 @@
 # Nines九 Records
 
+[![Netlify Status](https://api.netlify.com/api/v1/badges/ca8f0bfe-bb37-4833-be3f-7fd92328d405/deploy-status)](https://app.netlify.com/projects/nines-records/deploys)
+
 A virtual record player / turntable UI that plays full songs through Spotify.
 Built with React, TypeScript, Vite, Tailwind CSS, Framer Motion, and Zustand,
 using the Spotify Web Playback SDK and Web API. Requires Spotify Premium.
