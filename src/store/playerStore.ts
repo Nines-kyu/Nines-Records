@@ -32,11 +32,15 @@ interface PlayerState {
   currentTrack: PlayerTrack | null
   positionMs: number
   queue: SpotifyQueueTrack[]
+  shuffle: boolean
+  repeatMode: 0 | 1 | 2
   setPlayer: (player: Spotify.Player | null) => void
   setDeviceId: (deviceId: string | null) => void
   setReady: (ready: boolean) => void
   applyState: (state: Spotify.PlaybackState | null) => void
   setQueue: (queue: SpotifyQueueTrack[]) => void
+  setShuffle: (shuffle: boolean) => void
+  setRepeatMode: (repeatMode: 0 | 1 | 2) => void
   reset: () => void
 }
 
@@ -48,11 +52,15 @@ export const usePlayerStore = create<PlayerState>()((set) => ({
   currentTrack: null,
   positionMs: 0,
   queue: [],
+  shuffle: false,
+  repeatMode: 0,
 
   setPlayer: (player) => set({ player }),
   setDeviceId: (deviceId) => set({ deviceId }),
   setReady: (isReady) => set({ isReady }),
   setQueue: (queue) => set({ queue }),
+  setShuffle: (shuffle) => set({ shuffle }),
+  setRepeatMode: (repeatMode) => set({ repeatMode }),
 
   applyState: (state) =>
     set(
@@ -61,6 +69,8 @@ export const usePlayerStore = create<PlayerState>()((set) => ({
             isPlaying: !state.paused,
             positionMs: state.position,
             currentTrack: toPlayerTrack(state),
+            shuffle: state.shuffle,
+            repeatMode: state.repeat_mode,
           }
         : { isPlaying: false, currentTrack: null, positionMs: 0 },
     ),
@@ -74,5 +84,7 @@ export const usePlayerStore = create<PlayerState>()((set) => ({
       currentTrack: null,
       positionMs: 0,
       queue: [],
+      shuffle: false,
+      repeatMode: 0,
     }),
 }))

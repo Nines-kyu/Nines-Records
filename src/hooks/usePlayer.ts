@@ -1,10 +1,19 @@
 import { useCallback, useEffect } from 'react'
-import { getAvailableDevices, getPlaybackQueue } from '../lib/spotifyApi'
+import {
+  getAvailableDevices,
+  getPlaybackQueue,
+  setPlaybackRepeatMode,
+  setPlaybackShuffle,
+  type SpotifyRepeatMode,
+} from '../lib/spotifyApi'
 import { loadSpotifyPlaybackSdk } from '../lib/spotifyPlaybackSdk'
 import { useAuthStore } from '../store/authStore'
 import { usePlayerStore } from '../store/playerStore'
 
 const PLAYER_NAME = 'Nines九 Records'
+
+// Spotify's repeat_mode is 0 (off) / 1 (repeat context) / 2 (repeat track).
+const REPEAT_MODE_CYCLE: SpotifyRepeatMode[] = ['off', 'context', 'track']
 
 export function usePlayer() {
   const status = useAuthStore((s) => s.status)
@@ -17,11 +26,15 @@ export function usePlayer() {
   const currentTrack = usePlayerStore((s) => s.currentTrack)
   const positionMs = usePlayerStore((s) => s.positionMs)
   const queue = usePlayerStore((s) => s.queue)
+  const shuffle = usePlayerStore((s) => s.shuffle)
+  const repeatMode = usePlayerStore((s) => s.repeatMode)
   const setPlayer = usePlayerStore((s) => s.setPlayer)
   const setDeviceId = usePlayerStore((s) => s.setDeviceId)
   const setReady = usePlayerStore((s) => s.setReady)
   const applyState = usePlayerStore((s) => s.applyState)
   const setQueue = usePlayerStore((s) => s.setQueue)
+  const setShuffleState = usePlayerStore((s) => s.setShuffle)
+  const setRepeatModeState = usePlayerStore((s) => s.setRepeatMode)
   const reset = usePlayerStore((s) => s.reset)
 
   useEffect(() => {
@@ -168,6 +181,38 @@ export function usePlayer() {
     setTimeout(refreshQueue, 800)
   }, [player, refreshQueue])
 
+  const toggleShuffle = useCallback(async () => {
+    const token = await getValidAccessToken()
+    if (!token) return
+
+    const targetDeviceId = await resolveDeviceId(token)
+    if (!targetDeviceId) return
+
+    const nextShuffle = !shuffle
+    try {
+      await setPlaybackShuffle(token, targetDeviceId, nextShuffle)
+      setShuffleState(nextShuffle)
+    } catch (err) {
+      console.error('Failed to toggle shuffle:', err)
+    }
+  }, [getValidAccessToken, resolveDeviceId, shuffle, setShuffleState])
+
+  const cycleRepeatMode = useCallback(async () => {
+    const token = await getValidAccessToken()
+    if (!token) return
+
+    const targetDeviceId = await resolveDeviceId(token)
+    if (!targetDeviceId) return
+
+    const nextIndex = ((repeatMode + 1) % 3) as 0 | 1 | 2
+    try {
+      await setPlaybackRepeatMode(token, targetDeviceId, REPEAT_MODE_CYCLE[nextIndex])
+      setRepeatModeState(nextIndex)
+    } catch (err) {
+      console.error('Failed to set repeat mode:', err)
+    }
+  }, [getValidAccessToken, resolveDeviceId, repeatMode, setRepeatModeState])
+
   // Spotify has no "jump to queue position" endpoint — skipping forward
   // `index + 1` times is what actually moves through the real queue/context,
   // as opposed to playUri() which would replace it with a single track.
@@ -185,6 +230,14 @@ export function usePlayer() {
     [player, refreshQueue],
   )
 
+  // Spotify fills every queue slot with the currently-playing track when
+  // there's no real next track (e.g. a single song played outside a
+  // playlist/album context) — drop those duplicates so "up next" doesn't
+  // just repeat what's already playing.
+  const upNextQueue = queue
+    .map((track, index) => ({ track, index }))
+    .filter(({ track }) => track.id !== currentTrack?.id)
+
   return {
     isReady,
     isPlaying,
@@ -192,6 +245,9 @@ export function usePlayer() {
     positionMs,
     deviceId,
     queue,
+    upNextQueue,
+    shuffle,
+    repeatMode,
     refreshQueue,
     playUri,
     playContextUri,
@@ -202,5 +258,7 @@ export function usePlayer() {
     seek,
     next,
     previous,
+    toggleShuffle,
+    cycleRepeatMode,
   }
 }
