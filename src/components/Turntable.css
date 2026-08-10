@@ -135,6 +135,30 @@
   background: #2c2c2c;
 }
 
+.nr-progress-ring {
+  position: absolute;
+  top: -20px;
+  left: 0;
+  width: 300px;
+  height: 300px;
+  z-index: 6;
+  pointer-events: none;
+  transform: rotate(-90deg);
+}
+
+.nr-progress-ring-track {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.06);
+  stroke-width: 4;
+}
+
+.nr-progress-ring-fill {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
 .nr-logo-center {
   position: absolute;
   left: 50%;
@@ -258,15 +282,14 @@
   top: 115px;
   left: 490px;
   transform-origin: 29px 29px;
-  transition: transform 0.6s ease;
-  transform: rotateZ(0deg);
   z-index: 6;
   pointer-events: auto;
-  cursor: pointer;
+  touch-action: none;
+  cursor: grab;
 }
 
-.nr-tonearm-assembly.is-playing {
-  transform: rotateZ(40deg);
+.nr-tonearm-assembly:active {
+  cursor: grabbing;
 }
 
 .nr-axle-shadow {
