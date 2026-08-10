@@ -4,6 +4,7 @@
   --font-sans: system-ui, 'Segoe UI', Roboto, sans-serif;
   --color-accent: #ff914d;
   --color-accent-hover: #ff7f2a;
+  --color-accent-shadow: #cc743e;
 }
 
 :root {
