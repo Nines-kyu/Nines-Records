@@ -61,3 +61,8 @@ This is a static build (`npm run build` → `dist/`), so any static host works. 
 - `npm run lint` — run oxlint
 - `npm run preview` — preview the production build locally
 - `npm run setup:env` — create `.env` from `.env.example` (safe to re-run, won't overwrite an existing `.env`)
+
+## License
+
+All rights reserved. This repository is public for portfolio purposes only —
+see [LICENSE](./LICENSE) for details.
