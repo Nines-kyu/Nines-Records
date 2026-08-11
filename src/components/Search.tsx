@@ -1,18 +1,13 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react'
 import { usePlayer } from '../hooks/usePlayer'
-import { search, type SpotifySearchResults } from '../lib/spotifyApi'
+import { formatDuration } from '../lib/formatDuration'
+import { search, type SpotifyArtistResult, type SpotifySearchResults } from '../lib/spotifyApi'
 import { useAuthStore } from '../store/authStore'
+import { ArtistView } from './ArtistView'
 
 type SearchStatus = 'idle' | 'loading' | 'error'
 
-const EMPTY_RESULTS: SpotifySearchResults = { tracks: [], albums: [] }
-
-function formatDuration(ms: number): string {
-  const totalSeconds = Math.round(ms / 1000)
-  const minutes = Math.floor(totalSeconds / 60)
-  const seconds = totalSeconds % 60
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`
-}
+const EMPTY_RESULTS: SpotifySearchResults = { tracks: [], albums: [], artists: [] }
 
 export function Search() {
   const getValidAccessToken = useAuthStore((s) => s.getValidAccessToken)
@@ -20,6 +15,7 @@ export function Search() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SpotifySearchResults>(EMPTY_RESULTS)
   const [status, setStatus] = useState<SearchStatus>('idle')
+  const [selectedArtist, setSelectedArtist] = useState<SpotifyArtistResult | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -28,6 +24,7 @@ export function Search() {
       if (!containerRef.current?.contains(event.target as Node)) {
         setResults(EMPTY_RESULTS)
         setStatus('idle')
+        setSelectedArtist(null)
         inputRef.current?.blur()
       }
     }
@@ -42,6 +39,7 @@ export function Search() {
     if (!trimmed) return
 
     setStatus('loading')
+    setSelectedArtist(null)
     try {
       const token = await getValidAccessToken()
       if (!token) throw new Error('Not authenticated')
@@ -59,23 +57,42 @@ export function Search() {
     if (!value.trim()) {
       setResults(EMPTY_RESULTS)
       setStatus('idle')
+      setSelectedArtist(null)
     }
+  }
+
+  const closeResults = () => {
+    setResults(EMPTY_RESULTS)
+    setSelectedArtist(null)
+    inputRef.current?.blur()
   }
 
   const handleSelectTrack = (uri: string) => {
     playUri(uri)
-    setResults(EMPTY_RESULTS)
-    inputRef.current?.blur()
+    closeResults()
   }
 
   const handleSelectAlbum = (uri: string) => {
     playContextUri(uri)
-    setResults(EMPTY_RESULTS)
-    inputRef.current?.blur()
+    closeResults()
   }
 
-  const hasResults = results.tracks.length > 0 || results.albums.length > 0
-  const isResultsOpen = status === 'error' || hasResults
+  const handleSelectArtist = (artist: SpotifyArtistResult) => {
+    setSelectedArtist(artist)
+  }
+
+  const handlePlayArtist = () => {
+    if (!selectedArtist) return
+    // Get Artist's Top Tracks is restricted for apps without Extended Quota
+    // Mode, so play the artist as a context instead — the same trick
+    // Spotify's own artist-page Play button uses under the hood.
+    playContextUri(selectedArtist.uri)
+    closeResults()
+  }
+
+  const hasResults =
+    results.tracks.length > 0 || results.albums.length > 0 || results.artists.length > 0
+  const isResultsOpen = status === 'error' || hasResults || selectedArtist !== null
 
   return (
     <div ref={containerRef} className="relative mx-auto w-full max-w-md">
@@ -88,7 +105,7 @@ export function Search() {
           type="text"
           value={query}
           onChange={(event) => handleQueryChange(event.target.value)}
-          placeholder="Search for a song or album…"
+          placeholder="Search for a song, album, or artist…"
           className="flex-1 bg-transparent py-1 text-sm outline-none placeholder:text-neutral-600"
         />
         <button
@@ -108,72 +125,126 @@ export function Search() {
 
       {isResultsOpen && (
         <div className="absolute inset-x-0 top-full z-20 mt-2 flex max-h-96 flex-col gap-3 overflow-y-auto rounded-2xl border border-neutral-800 bg-neutral-900/95 p-3 shadow-xl backdrop-blur">
-          {status === 'error' && <p className="px-1 text-xs text-red-400">Search failed. Try again.</p>}
+          {selectedArtist ? (
+            <ArtistView
+              artist={selectedArtist}
+              disabled={!deviceId}
+              onBack={() => setSelectedArtist(null)}
+              onPlay={handlePlayArtist}
+            />
+          ) : (
+            <>
+              {status === 'error' && (
+                <p className="px-1 text-xs text-red-400">Search failed. Try again.</p>
+              )}
 
-          {results.tracks.length > 0 && (
-            <div className="flex flex-col gap-1">
-              <h3 className="px-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                Songs
-              </h3>
-              <ul className="flex flex-col divide-y divide-neutral-800/60 text-left">
-                {results.tracks.map((track) => (
-                  <li key={track.id}>
-                    <button
-                      type="button"
-                      onClick={() => handleSelectTrack(track.uri)}
-                      disabled={!deviceId}
-                      className="flex w-full items-center gap-3 px-1 py-2 text-left transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {track.albumImageUrl && (
-                        <img
-                          src={track.albumImageUrl}
-                          alt=""
-                          className="h-10 w-10 shrink-0 rounded"
-                        />
-                      )}
-                      <span className="flex flex-1 flex-col overflow-hidden">
-                        <span className="truncate text-sm">{track.name}</span>
-                        <span className="truncate text-xs text-neutral-400">{track.artists}</span>
-                      </span>
-                      <span className="shrink-0 text-xs text-neutral-500">
-                        {formatDuration(track.durationMs)}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+              {results.artists.length > 0 && (
+                <div className="flex flex-col gap-1">
+                  <h3 className="px-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                    Artists
+                  </h3>
+                  <ul className="flex flex-col divide-y divide-neutral-800/60 text-left">
+                    {results.artists.map((artist) => (
+                      <li key={artist.id}>
+                        <button
+                          type="button"
+                          onClick={() => handleSelectArtist(artist)}
+                          className="flex w-full items-center gap-3 px-1 py-2 text-left transition hover:bg-neutral-800"
+                        >
+                          {artist.imageUrl ? (
+                            <img
+                              src={artist.imageUrl}
+                              alt=""
+                              className="h-10 w-10 shrink-0 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="h-10 w-10 shrink-0 rounded-full bg-neutral-800" />
+                          )}
+                          <span className="flex flex-1 flex-col overflow-hidden">
+                            <span className="truncate text-sm">{artist.name}</span>
+                            <span className="truncate text-xs text-neutral-400">Artist</span>
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
-          {results.albums.length > 0 && (
-            <div className="flex flex-col gap-1">
-              <h3 className="px-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                Albums
-              </h3>
-              <ul className="flex flex-col divide-y divide-neutral-800/60 text-left">
-                {results.albums.map((album) => (
-                  <li key={album.id}>
-                    <button
-                      type="button"
-                      onClick={() => handleSelectAlbum(album.uri)}
-                      disabled={!deviceId}
-                      className="flex w-full items-center gap-3 px-1 py-2 text-left transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {album.imageUrl && (
-                        <img src={album.imageUrl} alt="" className="h-10 w-10 shrink-0 rounded" />
-                      )}
-                      <span className="flex flex-1 flex-col overflow-hidden">
-                        <span className="truncate text-sm">{album.name}</span>
-                        <span className="truncate text-xs text-neutral-400">{album.artists}</span>
-                      </span>
-                      <span className="shrink-0 text-xs text-neutral-500">
-                        {album.releaseYear ?? `${album.trackCount} tracks`}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
+              {results.tracks.length > 0 && (
+                <div className="flex flex-col gap-1">
+                  <h3 className="px-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                    Songs
+                  </h3>
+                  <ul className="flex flex-col divide-y divide-neutral-800/60 text-left">
+                    {results.tracks.map((track) => (
+                      <li key={track.id}>
+                        <button
+                          type="button"
+                          onClick={() => handleSelectTrack(track.uri)}
+                          disabled={!deviceId}
+                          className="flex w-full items-center gap-3 px-1 py-2 text-left transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {track.albumImageUrl && (
+                            <img
+                              src={track.albumImageUrl}
+                              alt=""
+                              className="h-10 w-10 shrink-0 rounded"
+                            />
+                          )}
+                          <span className="flex flex-1 flex-col overflow-hidden">
+                            <span className="truncate text-sm">{track.name}</span>
+                            <span className="truncate text-xs text-neutral-400">
+                              {track.artists}
+                            </span>
+                          </span>
+                          <span className="shrink-0 text-xs text-neutral-500">
+                            {formatDuration(track.durationMs)}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {results.albums.length > 0 && (
+                <div className="flex flex-col gap-1">
+                  <h3 className="px-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                    Albums
+                  </h3>
+                  <ul className="flex flex-col divide-y divide-neutral-800/60 text-left">
+                    {results.albums.map((album) => (
+                      <li key={album.id}>
+                        <button
+                          type="button"
+                          onClick={() => handleSelectAlbum(album.uri)}
+                          disabled={!deviceId}
+                          className="flex w-full items-center gap-3 px-1 py-2 text-left transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {album.imageUrl && (
+                            <img
+                              src={album.imageUrl}
+                              alt=""
+                              className="h-10 w-10 shrink-0 rounded"
+                            />
+                          )}
+                          <span className="flex flex-1 flex-col overflow-hidden">
+                            <span className="truncate text-sm">{album.name}</span>
+                            <span className="truncate text-xs text-neutral-400">
+                              {album.artists}
+                            </span>
+                          </span>
+                          <span className="shrink-0 text-xs text-neutral-500">
+                            {album.releaseYear ?? `${album.trackCount} tracks`}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}

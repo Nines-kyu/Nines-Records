@@ -169,37 +169,61 @@ export interface SpotifyAlbumResult {
   trackCount: number
 }
 
+export interface SpotifyArtistResult {
+  id: string
+  uri: string
+  name: string
+  imageUrl: string | null
+  genres: string[]
+  followers: number
+}
+
 export interface SpotifySearchResults {
   tracks: SpotifyTrackResult[]
   albums: SpotifyAlbumResult[]
+  artists: SpotifyArtistResult[]
 }
 
+// Spotify's search results can contain `null` placeholders for regionally
+// unavailable content, and some fields are less consistently populated
+// than the official schema implies — every field below is treated as
+// possibly missing to avoid crashing the whole search on one bad item.
 interface SpotifySearchResponse {
   tracks?: {
     items: Array<{
       id: string
       uri: string
       name: string
-      artists: { name: string }[]
-      album: { name: string; images: { url: string }[] }
+      artists?: { name: string }[]
+      album?: { name: string; images?: { url: string }[] }
       duration_ms: number
-    }>
+    } | null>
   }
   albums?: {
     items: Array<{
       id: string
       uri: string
       name: string
-      artists: { name: string }[]
-      images: { url: string }[]
+      artists?: { name: string }[]
+      images?: { url: string }[]
       release_date?: string
       total_tracks: number
-    }>
+    } | null>
+  }
+  artists?: {
+    items: Array<{
+      id: string
+      uri: string
+      name: string
+      images?: { url: string }[]
+      genres?: string[]
+      followers?: { total: number }
+    } | null>
   }
 }
 
 export async function search(query: string, accessToken: string): Promise<SpotifySearchResults> {
-  const params = new URLSearchParams({ q: query, type: 'track,album' })
+  const params = new URLSearchParams({ q: query, type: 'track,album,artist' })
 
   const response = await fetch(`https://api.spotify.com/v1/search?${params.toString()}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -211,25 +235,53 @@ export async function search(query: string, accessToken: string): Promise<Spotif
 
   const data = (await response.json()) as SpotifySearchResponse
 
-  const tracks = (data.tracks?.items ?? []).map((track) => ({
-    id: track.id,
-    uri: track.uri,
-    name: track.name,
-    artists: track.artists.map((artist) => artist.name).join(', '),
-    albumName: track.album.name,
-    albumImageUrl: track.album.images[0]?.url ?? null,
-    durationMs: track.duration_ms,
-  }))
+  const tracks = (data.tracks?.items ?? []).flatMap((track) =>
+    track
+      ? [
+          {
+            id: track.id,
+            uri: track.uri,
+            name: track.name,
+            artists: track.artists?.map((artist) => artist.name).join(', ') ?? '',
+            albumName: track.album?.name ?? '',
+            albumImageUrl: track.album?.images?.[0]?.url ?? null,
+            durationMs: track.duration_ms,
+          },
+        ]
+      : [],
+  )
 
-  const albums = (data.albums?.items ?? []).map((album) => ({
-    id: album.id,
-    uri: album.uri,
-    name: album.name,
-    artists: album.artists.map((artist) => artist.name).join(', '),
-    imageUrl: album.images[0]?.url ?? null,
-    releaseYear: album.release_date?.slice(0, 4) ?? null,
-    trackCount: album.total_tracks,
-  }))
+  const albums = (data.albums?.items ?? []).flatMap((album) =>
+    album
+      ? [
+          {
+            id: album.id,
+            uri: album.uri,
+            name: album.name,
+            artists: album.artists?.map((artist) => artist.name).join(', ') ?? '',
+            imageUrl: album.images?.[0]?.url ?? null,
+            releaseYear: album.release_date?.slice(0, 4) ?? null,
+            trackCount: album.total_tracks,
+          },
+        ]
+      : [],
+  )
 
-  return { tracks, albums }
+  const artists = (data.artists?.items ?? []).flatMap((artist) =>
+    artist
+      ? [
+          {
+            id: artist.id,
+            uri: artist.uri,
+            name: artist.name,
+            imageUrl: artist.images?.[0]?.url ?? null,
+            genres: artist.genres ?? [],
+            followers: artist.followers?.total ?? 0,
+          },
+        ]
+      : [],
+  )
+
+  return { tracks, albums, artists }
 }
+
