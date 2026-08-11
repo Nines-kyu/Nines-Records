@@ -38,6 +38,7 @@ interface PlayerState {
   queue: SpotifyQueueTrack[]
   shuffle: boolean
   repeatMode: 0 | 1 | 2
+  volume: number
   setPlayer: (player: Spotify.Player | null) => void
   setDeviceId: (deviceId: string | null) => void
   setReady: (ready: boolean) => void
@@ -45,6 +46,7 @@ interface PlayerState {
   setQueue: (queue: SpotifyQueueTrack[]) => void
   setShuffle: (shuffle: boolean) => void
   setRepeatMode: (repeatMode: 0 | 1 | 2) => void
+  setVolume: (volume: number) => void
   reset: () => void
 }
 
@@ -58,6 +60,7 @@ export const usePlayerStore = create<PlayerState>()((set) => ({
   queue: [],
   shuffle: false,
   repeatMode: 0,
+  volume: 0.5,
 
   setPlayer: (player) => set({ player }),
   setDeviceId: (deviceId) => set({ deviceId }),
@@ -65,6 +68,7 @@ export const usePlayerStore = create<PlayerState>()((set) => ({
   setQueue: (queue) => set({ queue }),
   setShuffle: (shuffle) => set({ shuffle }),
   setRepeatMode: (repeatMode) => set({ repeatMode }),
+  setVolume: (volume) => set({ volume }),
 
   applyState: (state) =>
     set(
@@ -90,5 +94,6 @@ export const usePlayerStore = create<PlayerState>()((set) => ({
       queue: [],
       shuffle: false,
       repeatMode: 0,
+      volume: 0.5,
     }),
 }))

@@ -28,6 +28,7 @@ export function usePlayer() {
   const queue = usePlayerStore((s) => s.queue)
   const shuffle = usePlayerStore((s) => s.shuffle)
   const repeatMode = usePlayerStore((s) => s.repeatMode)
+  const volume = usePlayerStore((s) => s.volume)
   const setPlayer = usePlayerStore((s) => s.setPlayer)
   const setDeviceId = usePlayerStore((s) => s.setDeviceId)
   const setReady = usePlayerStore((s) => s.setReady)
@@ -35,6 +36,7 @@ export function usePlayer() {
   const setQueue = usePlayerStore((s) => s.setQueue)
   const setShuffleState = usePlayerStore((s) => s.setShuffle)
   const setRepeatModeState = usePlayerStore((s) => s.setRepeatMode)
+  const setVolumeState = usePlayerStore((s) => s.setVolume)
   const reset = usePlayerStore((s) => s.reset)
 
   useEffect(() => {
@@ -53,7 +55,7 @@ export function usePlayer() {
             if (token) cb(token)
           })
         },
-        volume: 0.5,
+        volume: usePlayerStore.getState().volume,
       })
 
       spotifyPlayer.addListener('ready', ({ device_id }) => {
@@ -168,6 +170,15 @@ export function usePlayer() {
     [startPlayback],
   )
 
+  const setVolume = useCallback(
+    (value: number) => {
+      const clamped = Math.min(Math.max(value, 0), 1)
+      setVolumeState(clamped)
+      player?.setVolume(clamped)
+    },
+    [player, setVolumeState],
+  )
+
   const resume = useCallback(() => player?.resume(), [player])
   const pause = useCallback(() => player?.pause(), [player])
   const togglePlay = useCallback(() => player?.togglePlay(), [player])
@@ -248,6 +259,8 @@ export function usePlayer() {
     upNextQueue,
     shuffle,
     repeatMode,
+    volume,
+    setVolume,
     refreshQueue,
     playUri,
     playContextUri,
