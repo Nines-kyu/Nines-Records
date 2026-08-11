@@ -8,7 +8,9 @@ export interface PlayerTrack {
   artists: string
   albumName: string
   albumImageUrl: string | null
+  albumUri: string | null
   durationMs: number
+  type: 'track' | 'episode' | 'ad'
 }
 
 function toPlayerTrack(state: Spotify.PlaybackState): PlayerTrack {
@@ -20,7 +22,9 @@ function toPlayerTrack(state: Spotify.PlaybackState): PlayerTrack {
     artists: track.artists.map((artist) => artist.name).join(', '),
     albumName: track.album.name,
     albumImageUrl: track.album.images[0]?.url ?? null,
+    albumUri: track.album.uri ?? null,
     durationMs: track.duration_ms,
+    type: track.type,
   }
 }
 
