@@ -33,8 +33,12 @@ interface SpotifyQueueResponseItem {
   id: string
   uri: string
   name: string
+  // Track shape.
   artists?: { name: string }[]
-  album?: { images: { url: string }[] }
+  album?: { images?: { url: string }[] }
+  // Episode shape — no `artists`/`album`, the show stands in for both.
+  images?: { url: string }[]
+  show?: { name: string; publisher?: string; images?: { url: string }[] }
 }
 
 interface SpotifyQueueResponse {
@@ -42,12 +46,15 @@ interface SpotifyQueueResponse {
 }
 
 function toQueueTrack(item: SpotifyQueueResponseItem): SpotifyQueueTrack {
+  const artists = item.artists?.map((artist) => artist.name).join(', ')
+  const albumImageUrl = item.album?.images?.[0]?.url
+
   return {
     id: item.id,
     uri: item.uri,
     name: item.name,
-    artists: item.artists?.map((artist) => artist.name).join(', ') ?? '',
-    albumImageUrl: item.album?.images[0]?.url ?? null,
+    artists: artists ?? item.show?.publisher ?? item.show?.name ?? '',
+    albumImageUrl: albumImageUrl ?? item.images?.[0]?.url ?? item.show?.images?.[0]?.url ?? null,
   }
 }
 
@@ -147,6 +154,124 @@ export async function getUserPlaylists(accessToken: string): Promise<SpotifyPlay
   }
 
   return playlists
+}
+
+export interface SpotifyShow {
+  id: string
+  uri: string
+  name: string
+  publisher: string
+  imageUrl: string | null
+  totalEpisodes: number
+}
+
+interface SpotifyShowsResponse {
+  items: Array<{
+    show: {
+      id: string
+      uri: string
+      name: string
+      publisher: string
+      images?: { url: string }[]
+      total_episodes: number
+    }
+  } | null>
+  next: string | null
+}
+
+export async function getUserShows(accessToken: string): Promise<SpotifyShow[]> {
+  const shows: SpotifyShow[] = []
+  let url: string | null = 'https://api.spotify.com/v1/me/shows'
+
+  while (url) {
+    const response: Response = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch shows: ${response.status} ${await response.text()}`)
+    }
+
+    const data = (await response.json()) as SpotifyShowsResponse
+
+    for (const item of data.items) {
+      if (!item) continue
+      shows.push({
+        id: item.show.id,
+        uri: item.show.uri,
+        name: item.show.name,
+        publisher: item.show.publisher,
+        imageUrl: item.show.images?.[0]?.url ?? null,
+        totalEpisodes: item.show.total_episodes,
+      })
+    }
+
+    url = data.next
+  }
+
+  return shows
+}
+
+export interface SpotifyEpisode {
+  id: string
+  uri: string
+  name: string
+  imageUrl: string | null
+  durationMs: number
+}
+
+interface SpotifyShowEpisodesResponse {
+  items: Array<{
+    id: string
+    uri: string
+    name: string
+    images?: { url: string }[]
+    duration_ms: number
+  } | null>
+}
+
+// Episodes are returned newest-first by default, so index 0 is always the
+// most recent episode.
+export async function getShowEpisodes(
+  showId: string,
+  accessToken: string,
+  limit = 50,
+): Promise<SpotifyEpisode[]> {
+  const params = new URLSearchParams({ limit: String(limit) })
+  const response = await fetch(
+    `https://api.spotify.com/v1/shows/${showId}/episodes?${params.toString()}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  )
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch show episodes: ${response.status} ${await response.text()}`)
+  }
+
+  const data = (await response.json()) as SpotifyShowEpisodesResponse
+
+  return data.items.flatMap((episode) =>
+    episode
+      ? [
+          {
+            id: episode.id,
+            uri: episode.uri,
+            name: episode.name,
+            imageUrl: episode.images?.[0]?.url ?? null,
+            durationMs: episode.duration_ms,
+          },
+        ]
+      : [],
+  )
+}
+
+// Shows aren't playable as a continuous context the way playlists/albums
+// are, so "playing a show" means starting its most recent episode.
+export async function getShowLatestEpisodeUri(
+  showId: string,
+  accessToken: string,
+): Promise<string | null> {
+  const episodes = await getShowEpisodes(showId, accessToken, 1)
+  return episodes[0]?.uri ?? null
 }
 
 export interface SpotifyTrackResult {
