@@ -1,6 +1,7 @@
 import { animate, motion, useMotionValue, useSpring } from 'framer-motion'
 import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from 'react'
 import './Turntable.css'
+import { usePlaybackPosition } from '../hooks/usePlaybackPosition'
 import { usePlayer } from '../hooks/usePlayer'
 import { useVinylCrackle } from '../hooks/useVinylCrackle'
 
@@ -20,7 +21,8 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 export function Turntable() {
-  const { isPlaying, currentTrack, positionMs, togglePlay, seek } = usePlayer()
+  const { isPlaying, currentTrack, togglePlay, seek } = usePlayer()
+  const livePositionMs = usePlaybackPosition()
   const { enabled: crackleEnabled, toggle: toggleCrackle } = useVinylCrackle(isPlaying)
   const rotate = useMotionValue(0)
   const activeAnimation = useRef<ReturnType<typeof animate> | null>(null)
@@ -66,31 +68,18 @@ export function Turntable() {
       return
     }
 
-    if (!isPlaying) {
-      progress.set(Math.min(positionMs / durationMs, 1))
-      if (!isDraggingRef.current) armRotateTarget.set(TONEARM_REST_DEG)
-      return
+    // livePositionMs advances every frame while playing (see
+    // usePlaybackPosition), so the ring and tonearm sweep smoothly.
+    const ratio = Math.min(livePositionMs / durationMs, 1)
+    progress.set(ratio)
+    if (!isDraggingRef.current) {
+      armRotateTarget.set(
+        isPlaying
+          ? TONEARM_START_DEG + ratio * (TONEARM_END_DEG - TONEARM_START_DEG)
+          : TONEARM_REST_DEG,
+      )
     }
-
-    // Spotify only pushes a fresh position on discrete events (play,
-    // pause, seek, track change), not continuously — interpolate locally
-    // from the last known position/timestamp so the ring and tonearm
-    // sweep smoothly, and let it re-anchor whenever a real update lands.
-    const base = { position: positionMs, timestamp: performance.now() }
-    let frame: number
-    const tick = () => {
-      const elapsed = performance.now() - base.timestamp
-      const ratio = Math.min((base.position + elapsed) / durationMs, 1)
-      progress.set(ratio)
-      if (!isDraggingRef.current) {
-        armRotateTarget.set(TONEARM_START_DEG + ratio * (TONEARM_END_DEG - TONEARM_START_DEG))
-      }
-      frame = requestAnimationFrame(tick)
-    }
-    frame = requestAnimationFrame(tick)
-
-    return () => cancelAnimationFrame(frame)
-  }, [isPlaying, positionMs, currentTrack?.durationMs, progress, armRotateTarget])
+  }, [isPlaying, livePositionMs, currentTrack?.durationMs, progress, armRotateTarget])
 
   useEffect(() => {
     const trackId = currentTrack?.id
