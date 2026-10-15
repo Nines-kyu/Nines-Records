@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { AuthCallback } from './components/AuthCallback'
 import { LoginButton } from './components/LoginButton'
+import { LyricsPanel } from './components/LyricsPanel'
 import { PlaylistsPanel } from './components/PlaylistsPanel'
 import { QueuePanel } from './components/QueuePanel'
 import { Search } from './components/Search'
@@ -23,6 +24,7 @@ function App() {
   const [profile, setProfile] = useState<SpotifyProfile | null>(null)
   const [playlistsCollapsed, setPlaylistsCollapsed] = useState(false)
   const [queueCollapsed, setQueueCollapsed] = useState(false)
+  const [lyricsCollapsed, setLyricsCollapsed] = useState(false)
   const queue = usePlayerStore((s) => s.queue)
   const currentTrack = usePlayerStore((s) => s.currentTrack)
   const { ref: queueRef, height: queueHeight } = useElementHeight<HTMLDivElement>()
@@ -100,6 +102,10 @@ function App() {
                 <div className="flex flex-1 flex-col items-center gap-6">
                   <Turntable />
                   <TurntableControls />
+                  <LyricsPanel
+                    collapsed={lyricsCollapsed}
+                    onToggleCollapsed={() => setLyricsCollapsed((collapsed) => !collapsed)}
+                  />
                 </div>
               </div>
             </div>
