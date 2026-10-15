@@ -61,7 +61,7 @@ function App() {
   }
 
   return (
-    <main className="flex min-h-svh flex-col items-center justify-center gap-4 p-8 text-center">
+    <main className="flex min-h-svh flex-col items-center justify-center gap-4 px-4 py-8 text-center sm:p-8">
       <h1 className="text-3xl font-semibold tracking-tight">
         Nines<span className="text-accent">九</span> Records
       </h1>
@@ -70,15 +70,15 @@ function App() {
       </p>
 
       {status === 'authenticated' ? (
-        <div className="flex flex-col items-center gap-3">
+        <div className="flex w-full flex-col items-center gap-3">
           <p className="text-sm text-neutral-300">
             Signed in{profile?.display_name ? ` as ${profile.display_name}` : ''}.
           </p>
-          <div className="w-full max-w-360 rounded-2xl border border-neutral-800 bg-neutral-900/20 p-6">
+          <div className="w-full max-w-360 rounded-2xl border border-neutral-800 bg-neutral-900/20 p-4 sm:p-6">
             <div className="flex w-full flex-col items-center gap-8">
               <Search />
-              <div className="flex w-full flex-col items-start gap-8 lg:flex-row lg:justify-between">
-                <div className="flex w-full flex-col gap-6 lg:w-2xl lg:shrink-0 lg:flex-row lg:items-stretch">
+              <div className="flex w-full flex-col items-start gap-8 min-[1440px]:flex-row min-[1440px]:justify-between">
+                <div className="flex w-full flex-col gap-6 md:flex-row md:items-stretch min-[1440px]:w-2xl min-[1440px]:shrink-0">
                   <div
                     className="flex min-w-0 flex-1 self-start"
                     style={
@@ -99,7 +99,7 @@ function App() {
                     />
                   </div>
                 </div>
-                <div className="flex flex-1 flex-col items-center gap-6">
+                <div className="flex w-full min-w-0 flex-1 flex-col items-center gap-6">
                   <Turntable />
                   <TurntableControls />
                   <LyricsPanel
