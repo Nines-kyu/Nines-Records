@@ -7,6 +7,7 @@ import { Search } from './components/Search'
 import { Turntable } from './components/Turntable'
 import { TurntableControls } from './components/TurntableControls'
 import { useElementHeight } from './hooks/useElementHeight'
+import { usePlayerInit } from './hooks/usePlayerInit'
 import { useAuthStore } from './store/authStore'
 import { usePlayerStore } from './store/playerStore'
 
@@ -27,6 +28,8 @@ function App() {
   const { ref: queueRef, height: queueHeight } = useElementHeight<HTMLDivElement>()
   const hasQueueTracks = queue.some((track) => track.id !== currentTrack?.id)
   const matchQueueHeight = hasQueueTracks && !queueCollapsed ? queueHeight : null
+
+  usePlayerInit(!isCallbackRoute)
 
   useEffect(() => {
     if (status !== 'authenticated' || !token) {

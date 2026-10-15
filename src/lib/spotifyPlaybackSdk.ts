@@ -1,3 +1,6 @@
+// The Connect device name — also used to find our device in the devices list.
+export const PLAYER_NAME = 'Nines九 Records'
+
 let loadPromise: Promise<void> | null = null
 
 export function loadSpotifyPlaybackSdk(): Promise<void> {

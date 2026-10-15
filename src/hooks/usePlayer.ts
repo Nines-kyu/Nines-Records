@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback } from 'react'
 import {
   getAvailableDevices,
   getPlaybackQueue,
@@ -6,17 +6,17 @@ import {
   setPlaybackShuffle,
   type SpotifyRepeatMode,
 } from '../lib/spotifyApi'
-import { loadSpotifyPlaybackSdk } from '../lib/spotifyPlaybackSdk'
+import { PLAYER_NAME } from '../lib/spotifyPlaybackSdk'
 import { useAuthStore } from '../store/authStore'
 import { usePlayerStore } from '../store/playerStore'
-
-const PLAYER_NAME = 'Nines九 Records'
 
 // Spotify's repeat_mode is 0 (off) / 1 (repeat context) / 2 (repeat track).
 const REPEAT_MODE_CYCLE: SpotifyRepeatMode[] = ['off', 'context', 'track']
 
+// Playback state and actions for components. The Spotify.Player itself is
+// created once by usePlayerInit (mounted in App) — this hook never creates
+// or tears down players, so it's safe to call from any number of components.
 export function usePlayer() {
-  const status = useAuthStore((s) => s.status)
   const getValidAccessToken = useAuthStore((s) => s.getValidAccessToken)
 
   const player = usePlayerStore((s) => s.player)
@@ -29,68 +29,11 @@ export function usePlayer() {
   const shuffle = usePlayerStore((s) => s.shuffle)
   const repeatMode = usePlayerStore((s) => s.repeatMode)
   const volume = usePlayerStore((s) => s.volume)
-  const setPlayer = usePlayerStore((s) => s.setPlayer)
   const setDeviceId = usePlayerStore((s) => s.setDeviceId)
-  const setReady = usePlayerStore((s) => s.setReady)
-  const applyState = usePlayerStore((s) => s.applyState)
   const setQueue = usePlayerStore((s) => s.setQueue)
   const setShuffleState = usePlayerStore((s) => s.setShuffle)
   const setRepeatModeState = usePlayerStore((s) => s.setRepeatMode)
   const setVolumeState = usePlayerStore((s) => s.setVolume)
-  const reset = usePlayerStore((s) => s.reset)
-
-  useEffect(() => {
-    if (status !== 'authenticated') return
-
-    let cancelled = false
-    let spotifyPlayer: Spotify.Player | null = null
-
-    loadSpotifyPlaybackSdk().then(() => {
-      if (cancelled) return
-
-      spotifyPlayer = new window.Spotify.Player({
-        name: PLAYER_NAME,
-        getOAuthToken: (cb) => {
-          getValidAccessToken().then((token) => {
-            if (token) cb(token)
-          })
-        },
-        volume: usePlayerStore.getState().volume,
-      })
-
-      spotifyPlayer.addListener('ready', ({ device_id }) => {
-        setDeviceId(device_id)
-        setReady(true)
-      })
-      spotifyPlayer.addListener('not_ready', () => {
-        setReady(false)
-      })
-      spotifyPlayer.addListener('player_state_changed', (state) => {
-        applyState(state)
-      })
-      spotifyPlayer.addListener('initialization_error', ({ message }) => {
-        console.error('Spotify Web Playback SDK failed to initialize:', message)
-      })
-      spotifyPlayer.addListener('authentication_error', ({ message }) => {
-        console.error('Spotify Web Playback SDK authentication error:', message)
-      })
-      spotifyPlayer.addListener('account_error', ({ message }) => {
-        console.error('Spotify Web Playback SDK account error (Premium required):', message)
-      })
-      spotifyPlayer.addListener('playback_error', ({ message }) => {
-        console.error('Spotify Web Playback SDK playback error:', message)
-      })
-
-      spotifyPlayer.connect()
-      setPlayer(spotifyPlayer)
-    })
-
-    return () => {
-      cancelled = true
-      spotifyPlayer?.disconnect()
-      reset()
-    }
-  }, [status, getValidAccessToken, setPlayer, setDeviceId, setReady, applyState, reset])
 
   const resolveDeviceId = useCallback(
     async (token: string): Promise<string | null> => {
