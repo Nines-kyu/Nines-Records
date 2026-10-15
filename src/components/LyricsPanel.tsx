@@ -50,7 +50,7 @@ export function LyricsPanel({ collapsed, onToggleCollapsed }: LyricsPanelProps) 
     }
     if (lyrics.plainLyrics) {
       return (
-        <p className="max-h-[70vh] overflow-y-auto whitespace-pre-line text-left text-sm text-neutral-300">
+        <p className="max-h-[40vh] overflow-y-auto whitespace-pre-line text-left text-sm text-neutral-300">
           {lyrics.plainLyrics}
         </p>
       )
@@ -172,7 +172,7 @@ function SyncedLyrics({ lines }: SyncedLyricsProps) {
         // scrollbar drag.
         if (event.target === event.currentTarget) pauseAutoScroll()
       }}
-      className="relative flex max-h-[70vh] flex-col gap-1 overflow-y-auto text-left"
+      className="relative flex max-h-[40vh] flex-col gap-1 overflow-y-auto text-left"
     >
       {lines.map((line, index) => (
         <button

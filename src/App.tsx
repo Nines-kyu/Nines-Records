@@ -102,8 +102,6 @@ function App() {
                 <div className="flex flex-1 flex-col items-center gap-6">
                   <Turntable />
                   <TurntableControls />
-                </div>
-                <div className="flex w-full self-start lg:w-80 lg:shrink-0">
                   <LyricsPanel
                     collapsed={lyricsCollapsed}
                     onToggleCollapsed={() => setLyricsCollapsed((collapsed) => !collapsed)}
