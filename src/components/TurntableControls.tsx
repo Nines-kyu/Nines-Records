@@ -27,8 +27,8 @@ export function TurntableControls() {
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-neutral-800 bg-neutral-900/60 px-6 py-4">
-      <div className="flex items-center gap-6">
+    <div className="flex flex-col gap-3 rounded-2xl border border-neutral-800 bg-neutral-900/60 px-4 py-4 sm:px-6">
+      <div className="flex items-center gap-2 sm:gap-6">
         <span
           className={`h-2 w-2 rounded-full transition ${
             isReady ? 'bg-accent shadow-[0_0_8px_var(--color-accent)]' : 'bg-neutral-700'
